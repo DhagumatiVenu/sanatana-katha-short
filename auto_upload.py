@@ -41,7 +41,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 
 if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-    print("⚠ ERROR: Telegram credentials not set. Please set SANATANA_KATHA_TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.")
+    print("⚠ ERROR: Telegram credentials not set. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.")
     exit(1)
 
 # Ensure uploaded_videos folder exists
