@@ -5,7 +5,7 @@ import googleapiclient.discovery
 import googleapiclient.errors
 import googleapiclient.http
 from google.oauth2.credentials import Credentials
-from titles_and_tags import tags_comma_format,tags_hashtag_format , titles
+from titles_and_tags import tags_comma_format, tags_hashtag_format, titles
 import pytz
 import requests
 import shutil
@@ -59,6 +59,7 @@ def send_telegram_message(message):
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
     try:
         requests.post(url, json=payload)
+
     except Exception as e:
         print(f"⚠ Telegram Error: {e}")
 
@@ -67,31 +68,40 @@ def move_video_safely(video_file):
     try:
         new_path = os.path.join(uploaded_folder, os.path.basename(video_file))
         shutil.move(video_file, new_path)
-        send_telegram_message(f"✅ Moved {video_file} to {uploaded_folder}")
-        print(f"✅ Moved {video_file} to {uploaded_folder}")
+        message = f"✅ Moved {video_file} to {uploaded_folder}"
+        send_telegram_message(message)
+        print(message)
+
     except Exception as e:
-        send_telegram_message(f"❌ Error moving {video_file} to {uploaded_folder}")
-        print(f"❌ Error moving {video_file} to {uploaded_folder} because {e}")
+        error_message = f"❌ Error moving {video_file} to {uploaded_folder} because {e}"
+        send_telegram_message(error_message)
+        print(error_message)
 
-# def get_channel_info():
-#     try:
-#         response = youtube.channels().list(
-#             part="snippet",
-#             mine=True
-#         ).execute()
+# Function to add a video to a playlist
+def add_to_playlist(youtube, title, video_id, playlist_id):
+    try:
+        request_body = {
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {
+                    "kind": "youtube#video",
+                    "videoId": video_id
+                }
+            }
+        }
+        request = youtube.playlistItems().insert(part="snippet", body=request_body)
+        response = request.execute()
+        message = f"✅ Added video {title} to playlist📃 Motivational shorts."
+        send_telegram_message(message)
+        print(message)
 
-#         if 'items' in response and len(response['items']) > 0:
-#             channel = response['items'][0]
-#             print(f"Channel Title: {channel['snippet']['title']}")
-#             print(f"Channel ID: {channel['id']}")
-#         else:
-#             print("No channels found.")
-#     except Exception as e:
-#         print(f"Error getting channel info: {e}")
-
+    except Exception as e:
+        error_message = f"❌ Error adding video [{title}] to playlist📃 [Motivational Shorts] Because {e}"
+        send_telegram_message(error_message)
+        print(error_message)
 
 # Function to schedule YouTube video upload
-def schedule_upload(video_file, title, description, tags, scheduled_time):
+def schedule_upload(video_file, title, description, tags, scheduled_time, playlist_id):
     # get_channel_info()
     # print(title)
     try:
@@ -112,13 +122,17 @@ def schedule_upload(video_file, title, description, tags, scheduled_time):
         request = youtube.videos().insert(part="snippet,status", body=request_body, media_body=media)
         response = request.execute()
 
-        video_link = f"https://www.youtube.com/watch?v={response['id']}"
+        video_id = response['id']
+        video_link = f"https://www.youtube.com/watch?v={video_id}"
         message = f"✅ Scheduled: {title} for {scheduled_time}\n🔗 Video Link: {video_link}"
         send_telegram_message(message)
         print(message)
 
+        # Add the video to the specified playlist
+        add_to_playlist(youtube, title, video_id, playlist_id)
+
     except Exception as e:
-        error_message = f"❌ Error uploading {title}: {e}"
+        error_message = f"❌ Error uploading {title}. Because {e}"
         send_telegram_message(error_message)
         print(error_message)
         exit(1)
@@ -139,7 +153,25 @@ if len(video_files) >= 1:
         title=titles[int(os.path.splitext(video_files[0])[0])],
         description="✨ Dive into the profound wisdom of Sanatana Krishna & Arjuna! 🔥 Discover timeless teachings to ignite your inner strength. 💪✨", 
         tags=tags_comma_format,  # Modify tags as needed
-        scheduled_time=get_scheduled_time(8, 0)
+        scheduled_time=get_scheduled_time(8, 0),
+        playlist_id="PLiE2xlrohs-hGubskhNMU5rDxjLO9Kydk"
     )
     move_video_safely(video_file)
     
+
+
+# def get_channel_info():
+#     try:
+#         response = youtube.channels().list(
+#             part="snippet",
+#             mine=True
+#         ).execute()
+
+#         if 'items' in response and len(response['items']) > 0:
+#             channel = response['items'][0]
+#             print(f"Channel Title: {channel['snippet']['title']}")
+#             print(f"Channel ID: {channel['id']}")
+#         else:
+#             print("No channels found.")
+#     except Exception as e:
+#         print(f"Error getting channel info: {e}")
