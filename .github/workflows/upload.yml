@@ -15,28 +15,33 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v3  # ✅ Fetches the latest code
       
-      - name: Load Python Environment
-        uses: actions/setup-python@v4  # ✅ Corrected action
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: pip install -r requirements.txt
-      
-      - name: Debug Environment Variables
-        run: |
-          echo "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}"
-          echo "TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}"
-          echo "CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}"
-      
+
       - name: Set Environment Variables
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.SANATANA_KATHA_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> $GITHUB_ENV
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.SANATANA_KATHA_TELEGRAM_BOT_TOKEN }}" >> $GITHUB_ENV
           echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> $GITHUB_ENV
         
       - name: Create credentials.json file
         env:
-          CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS }}
+          CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS_JSON }}
         run: |
           printf '%s' "$CREDENTIALS_JSON" > credentials.json
           
