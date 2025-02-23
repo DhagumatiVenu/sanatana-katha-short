@@ -1,0 +1,72 @@
+name: Upload YouTube Video
+
+on:
+  schedule:
+    - cron: '30 7 * * *'  # Runs at 7:30 AM UTC, which is 9 AM IST
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # ✅ Allows GitHub Actions to modify files in the repo
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3  # ✅ Fetches the latest code
+      
+      - name: Load Python Environment
+        uses: actions/setup-python@v4  # ✅ Corrected action
+        with:
+          python-version: "3.10"
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Debug Environment Variables
+        run: |
+          echo "TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}"
+          echo "TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}"
+          echo "CREDENTIALS_JSON: ${{ secrets.CREDENTIALS_JSON }}"
+      
+      - name: Set Environment Variables
+        run: |
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.SANATANA_KATHA_TELEGRAM_BOT_TOKEN }}" >> $GITHUB_ENV
+          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> $GITHUB_ENV
+        
+      - name: Create credentials.json file
+        env:
+          CREDENTIALS_JSON: ${{ secrets.YOUTUBE_CREDENTIALS }}
+        run: |
+          printf '%s' "$CREDENTIALS_JSON" > credentials.json
+          
+      - name: Run auto_upload.py script
+        run: python auto_upload.py
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Add changes to staging area
+        run: |
+          git add -A
+          git status
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to commit"
+            exit 0
+          fi
+      
+      - name: Commit Changes
+        run: |
+          git commit -m "Automated commit from GitHub Actions" || echo "No changes to commit"
+          git config pull.rebase false  # ✅ Prevents rebase errors
+          # Ignore unwanted files
+          echo "__pycache__/" >> .gitignore
+          echo "*.pyc" >> .gitignore
+      
+      - name: Push Changes with GH_PAT
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/DhagumatiVenu/sanatana-katha-short.git main || echo "No new changes to push"
