@@ -39,7 +39,6 @@ youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentia
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-
 if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
     print("⚠ ERROR: Telegram credentials not set. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.")
     exit(1)
@@ -58,9 +57,9 @@ def send_telegram_message(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": message}
     try:
-        requests.post(url, json=payload)
-
-    except Exception as e:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+    except requests.exceptions.RequestException as e:
         print(f"⚠ Telegram Error: {e}")
 
 # Move uploaded videos to archive folder
@@ -71,7 +70,6 @@ def move_video_safely(video_file):
         message = f"✅ Moved {video_file} to {uploaded_folder}"
         send_telegram_message(message)
         print(message)
-
     except Exception as e:
         error_message = f"❌ Error moving {video_file} to {uploaded_folder} because {e}"
         send_telegram_message(error_message)
@@ -91,24 +89,21 @@ def add_to_playlist(youtube, title, video_id, playlist_id):
         }
         request = youtube.playlistItems().insert(part="snippet", body=request_body)
         response = request.execute()
-        message = f"✅ Added video {title} to playlist📃 Motivational shorts."
+        message = f"✅ Added video {title} to playlist 📃 Motivational shorts."
         send_telegram_message(message)
         print(message)
-
     except Exception as e:
-        error_message = f"❌ Error adding video [{title}] to playlist📃 [Motivational Shorts] Because {e}"
+        error_message = f"❌ Error adding video [{title}] to playlist 📃 [Motivational Shorts] Because {e}"
         send_telegram_message(error_message)
         print(error_message)
 
 # Function to schedule YouTube video upload
 def schedule_upload(video_file, title, description, tags, scheduled_time, playlist_id):
-    # get_channel_info()
-    # print(title)
     try:
         request_body = {
             "snippet": {
                 "title": title,
-                "description": description+" "+tags_hashtag_format,
+                "description": description + " " + tags_hashtag_format,
                 "tags": tags,
                 "categoryId": "22",
             },
@@ -117,26 +112,22 @@ def schedule_upload(video_file, title, description, tags, scheduled_time, playli
                 "publishAt": scheduled_time
             }
         }
-
         media = googleapiclient.http.MediaFileUpload(video_file, chunksize=-1, resumable=True)
         request = youtube.videos().insert(part="snippet,status", body=request_body, media_body=media)
         response = request.execute()
-
         video_id = response['id']
         video_link = f"https://www.youtube.com/watch?v={video_id}"
         message = f"✅ Scheduled: {title} for {scheduled_time}\n🔗 Video Link: {video_link}"
         send_telegram_message(message)
         print(message)
-
+        
         # Add the video to the specified playlist
         add_to_playlist(youtube, title, video_id, playlist_id)
-
     except Exception as e:
         error_message = f"❌ Error uploading {title}. Because {e}"
         send_telegram_message(error_message)
         print(error_message)
         exit(1)
-        
 
 # Function to get the scheduled upload time
 def get_scheduled_time(hour, minute):
@@ -154,19 +145,17 @@ if len(video_files) >= 1:
         description="✨ Dive into the profound wisdom of Sanatana Krishna & Arjuna! 🔥 Discover timeless teachings to ignite your inner strength. 💪✨", 
         tags=tags_comma_format,  # Modify tags as needed
         scheduled_time=get_scheduled_time(8, 0),
-        playlist_id="PLiE2xlrohs-hGubskhNMU5rDxjLO9Kydk"
+        playlist_id="YOUR_PLAYLIST_ID_HERE"  # Replace with your actual playlist ID
     )
     move_video_safely(video_file)
-    
 
-
+# Optional: Get channel information
 # def get_channel_info():
 #     try:
 #         response = youtube.channels().list(
 #             part="snippet",
 #             mine=True
 #         ).execute()
-
 #         if 'items' in response and len(response['items']) > 0:
 #             channel = response['items'][0]
 #             print(f"Channel Title: {channel['snippet']['title']}")
