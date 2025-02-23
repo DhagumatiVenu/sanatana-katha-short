@@ -118,8 +118,10 @@ def schedule_upload(video_file, title, description, tags, scheduled_time):
         print(message)
 
     except Exception as e:
-        error_message = f"venu: Error uploading {title}: {e}"
+        error_message = f"❌ Error uploading {title}: {e}"
         send_telegram_message(error_message)
+        print(error_message)
+        exit(1)
         
 
 # Function to get the scheduled upload time
