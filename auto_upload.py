@@ -89,11 +89,11 @@ def add_to_playlist(youtube, title, video_id, playlist_id):
         }
         request = youtube.playlistItems().insert(part="snippet", body=request_body)
         response = request.execute()
-        message = f"✅ Added video {title} to playlist 📃 Motivational shorts."
+        message = f"✅ Added video {title} to playlist 📃Divine Dialogues: Arjuna & Krishna Spiritual Insights Q&A Shorts."
         send_telegram_message(message)
         print(message)
     except Exception as e:
-        error_message = f"❌ Error adding video [{title}] to playlist 📃 [Motivational Shorts] Because {e}"
+        error_message = f"❌ Error adding video [{title}] to playlist 📃Divine Dialogues: Arjuna & Krishna Spiritual Insights Q&A Shorts. Because {e}"
         send_telegram_message(error_message)
         print(error_message)
 
