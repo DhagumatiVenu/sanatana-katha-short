@@ -145,7 +145,7 @@ if len(video_files) >= 1:
         description="✨ Dive into the profound wisdom of Sanatana Krishna & Arjuna! 🔥 Discover timeless teachings to ignite your inner strength. 💪✨", 
         tags=tags_comma_format,  # Modify tags as needed
         scheduled_time=get_scheduled_time(8, 0),
-        playlist_id="YOUR_PLAYLIST_ID_HERE"  # Replace with your actual playlist ID
+        playlist_id="PLiE2xlrohs-hGubskhNMU5rDxjLO9Kydk"  # Replace with your actual playlist ID
     )
     move_video_safely(video_file)
 
