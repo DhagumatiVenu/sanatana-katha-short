@@ -149,7 +149,7 @@ if len(video_files) >= 1:
     )
     move_video_safely(video_file)
 
-# Optional: Get channel information
+# Optional: Get channel informations
 # def get_channel_info():
 #     try:
 #         response = youtube.channels().list(
