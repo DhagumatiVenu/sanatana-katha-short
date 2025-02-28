@@ -1,47 +1,26 @@
 import os
-import json
-from google_auth_oauthlib.flow import InstalledAppFlow
+from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, AudioFileClip
+import multiprocessing
 
-# Define YouTube API Scopes
-SCOPES = [
-    "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube"
-]
+os.environ["OMP_NUM_THREADS"] = str(multiprocessing.cpu_count())  # Adjust based on your CPU
 
-# Path to client secrets file (Download this from Google Cloud Console)
-CLIENT_SECRETS_FILE = "client_secrets.json"
+# Load video and remove audio
+video = VideoFileClip("video.mp4").without_audio()
 
-def authenticate():
-    """Runs OAuth flow locally and saves credentials.json"""
-    try:
-        # Create a flow object using the client secrets file and specified scopes
-        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+# Load background music, trim to 11 sec & reduce volume by 50%
+audio = AudioFileClip("music_0.wav").subclip(0, 11)
 
-        # Run the local server flow to get credentials
-        credentials = flow.run_local_server(port=8080, prompt="consent", access_type="offline")
+# Attach modified music to video
+final_video = video.set_audio(audio)
 
-        print(f"Authenticated with account: {credentials._client_id}")
+# Save final video
+final_video.write_videofile(
+    "video1.mp4",
+    fps=30,
+    codec="libx264",
+    audio_codec="aac",
+    threads=multiprocessing.cpu_count(),
+    preset="ultrafast",
+    ffmpeg_params=["-crf", "23"]
+)
 
-        # Save credentials to a JSON file
-        credentials_data = {
-            "token": credentials.token,
-            "refresh_token": credentials.refresh_token,
-            "token_uri": credentials.token_uri,
-            "client_id": credentials.client_id,
-            "client_secret": credentials.client_secret,
-            "scopes": credentials.scopes
-        }
-
-        with open("credentials.json", "w") as f:
-            json.dump(credentials_data, f, indent=4)
-
-        print("✅ credentials.json has been successfully generated!")
-
-    except Exception as e:
-        print(f"❌ An error occurred during authentication: {e}")
-
-if __name__ == "__main__":
-    if not os.path.exists(CLIENT_SECRETS_FILE):
-        print(f"⚠ ERROR: {CLIENT_SECRETS_FILE} is missing. Please download it from Google Cloud Console.")
-    else:
-        authenticate()

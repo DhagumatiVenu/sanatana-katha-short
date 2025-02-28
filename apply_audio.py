@@ -6,16 +6,12 @@ from moviepy.editor import ImageClip, AudioFileClip
 # Get the number of available CPU cores
 threads = multiprocessing.cpu_count()
 
-# Ensure the output folder exists
-output_folder = "store"
-os.makedirs(output_folder, exist_ok=True)
-
 # Background image and audio file
 image_file = os.path.join("contents","background.png")
-audio_file = os.path.join("contents", "music.mp3")
+audio_file = os.path.join("contents", "music_0.wav")
 
 # Load audio and get its duration
-audio = AudioFileClip(audio_file)
+audio = AudioFileClip(audio_file).subclip(0,16)
 audio_duration = audio.duration  # Match video length to audio length
 
 # Create a video clip from the image
@@ -36,7 +32,7 @@ video = video.fx(lambda clip: clip.fl_image(lambda frame: (frame * 0.2).astype("
 video = video.set_audio(audio)
 
 # Define output file path
-output_video = os.path.join(output_folder, "video.mp4")
+output_video = os.path.join("video1.mp4")
 
 # Export final video using all CPU cores
 video.write_videofile(

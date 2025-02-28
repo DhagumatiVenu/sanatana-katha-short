@@ -4,7 +4,6 @@ import pandas as pd
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, vfx
 
 # Input & output folders
-input_video = os.path.join("store", "video.mp4")
 output_folder = "upload_videos"
 excel_file = "combined.xlsx"  # Excel file with Titles & Quotes
 os.makedirs(output_folder, exist_ok=True)  # Ensure output folder exists
@@ -13,6 +12,8 @@ videos_dic = {}
 
 # Load Excel file
 df = pd.read_excel(excel_file)
+
+df = df.iloc[56:]
 
 # Loop through each row in the Excel file
 for index, row in df.iterrows():
@@ -24,12 +25,8 @@ for index, row in df.iterrows():
 
         videos_dic[index + 1] = title
 
-        if not os.path.exists(input_video):
-            print(f"❌ Input video not found: {input_video}")
-            continue
-
         # Load video
-        final_video = VideoFileClip(input_video)
+        final_video = VideoFileClip("video.mp4" if index%2==0 else "video1.mp4")
 
         # Define colors
         arjuna_color = "yellow"
@@ -63,14 +60,14 @@ for index, row in df.iterrows():
             ffmpeg_params=["-crf", "23"]
         )
 
-        print(f"✅ Processed: {input_video} → Saved as {output_video}")
+        print(f"✅ Processed: video saved as {output_video}")
 
         # Cleanup
         final_video.close()
 
         print(videos_dic)
 
-        if index==10:
+        if index == 60:
             break
 
     except Exception as e:
