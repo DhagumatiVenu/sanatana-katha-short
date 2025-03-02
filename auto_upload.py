@@ -5,43 +5,21 @@ import googleapiclient.discovery
 import googleapiclient.errors
 import googleapiclient.http
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from titles_and_tags import tags_comma_format, tags_hashtag_format, titles
 import pytz
 import requests
 import shutil
 import json
 
-# Load YouTube Credentials from GitHub Secrets
+# Load YouTube Credentials
 CREDENTIALS_FILE = "credentials.json"
+CLIENT_SECRETS_FILE = "client_secrets.json"  # Not used in GitHub Actions
+SCOPES = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.upload"]
 
-try:
-    with open(CREDENTIALS_FILE, 'r') as f:
-        creds_data = json.load(f)
-        print("✅ Credentials Data loaded successfully.")
-except FileNotFoundError:
-    print(f"❌ Error: {CREDENTIALS_FILE} not found.")
-    exit(1)
-except json.JSONDecodeError as e:
-    print(f"❌ Error: Invalid JSON format in {CREDENTIALS_FILE}. Details: {e}")
-    exit(1)
-
-try:
-    credentials = Credentials.from_authorized_user_file(CREDENTIALS_FILE)
-    print("✅ Credentials loaded successfully.")
-except Exception as e:
-    print(f"❌ Error loading credentials: {e}")
-    exit(1)
-
-# Initialize YouTube API
-youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
-
-# Load Telegram Credentials
+# Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-
-if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-    print("⚠ ERROR: Telegram credentials not set. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.")
-    exit(1)
 
 # Ensure uploaded_videos folder exists
 uploaded_folder = "uploaded_videos"
@@ -61,6 +39,85 @@ def send_telegram_message(message):
         response.raise_for_status()  # Raise an exception for HTTP errors
     except requests.exceptions.RequestException as e:
         print(f"⚠ Telegram Error: {e}")
+
+def refresh_access_token(refresh_token, client_id, client_secret):
+    """Refresh the access token using the refresh token."""
+    token_url = "https://oauth2.googleapis.com/token"
+    payload = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "refresh_token": refresh_token,
+        "grant_type": "refresh_token",
+    }
+    try:
+        print("Sending refresh token request...")
+        response = requests.post(token_url, data=payload)
+        print(f"Response status code: {response.status_code}")
+        print(f"Response body: {response.text}")
+        response.raise_for_status()
+        return response.json().get("access_token")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error refreshing access token: {e}")
+        return None
+
+def load_or_refresh_credentials():
+    """Load credentials or refresh them if expired."""
+    creds = None
+
+    # Check if credentials file exists
+    if os.path.exists(CREDENTIALS_FILE):
+        try:
+            creds = Credentials.from_authorized_user_file(CREDENTIALS_FILE, SCOPES)
+            print("✅ Credentials loaded successfully.")
+        except Exception as e:
+            print(f"❌ Error loading credentials: {e}")
+            creds = None
+
+    # If no valid credentials, refresh or notify about revocation
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            print("Refreshing expired credentials...")
+            new_access_token = refresh_access_token(
+                creds.refresh_token,
+                creds.client_id,
+                creds.client_secret,
+            )
+            if new_access_token:
+                creds.token = new_access_token
+                creds.expiry = None  # Reset expiry to allow the library to calculate it
+                print("✅ Credentials refreshed successfully.")
+            else:
+                print("❌ Failed to refresh credentials.")
+                creds = None
+        else:
+            # Notify via Telegram if credentials are revoked or missing
+            error_message = (
+                "❌ Credentials missing or revoked. Please reauthorize the app:\n"
+                "1. Run the script locally.\n"
+                "2. Follow the authorization steps to generate a new credentials.json file.\n"
+                "3. Update the GitHub Secret with the new credentials."
+            )
+            send_telegram_message(error_message)
+            print(error_message)
+            exit(1)
+
+        # Save the updated credentials to the file
+        if creds:
+            with open(CREDENTIALS_FILE, "w") as token_file:
+                token_file.write(creds.to_json())
+                print("✅ Updated credentials saved to credentials.json.")
+
+    return creds
+
+# Load or refresh credentials
+credentials = load_or_refresh_credentials()
+
+# Initialize YouTube API
+youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
+
+if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+    print("⚠ ERROR: Telegram credentials not set. Please set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID environment variables.")
+    
 
 # Move uploaded videos to archive folder
 def move_video_safely(video_file):

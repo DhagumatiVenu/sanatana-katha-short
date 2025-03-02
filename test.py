@@ -1,26 +1,28 @@
 import os
-from moviepy.editor import VideoFileClip, concatenate_videoclips, vfx, AudioFileClip
-import multiprocessing
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.oauth2.credentials import Credentials
 
-os.environ["OMP_NUM_THREADS"] = str(multiprocessing.cpu_count())  # Adjust based on your CPU
+# Load YouTube Credentials
+CREDENTIALS_FILE = "credentials.json"
+CLIENT_SECRETS_FILE = "client_secrets.json"  # Contains your OAuth client ID and secret
+SCOPES = ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.upload"]
 
-# Load video and remove audio
-video = VideoFileClip("video.mp4").without_audio()
+def reauthorize_app():
+    """Reauthorize the app and generate a new credentials.json file."""
+    print("Starting reauthorization flow...")
+    try:
+        # Start the OAuth 2.0 flow
+        flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
+        creds = flow.run_local_server(port=0)  # Opens a browser for authorization
 
-# Load background music, trim to 11 sec & reduce volume by 50%
-audio = AudioFileClip("music_0.wav").subclip(0, 11)
+        # Save the new credentials to credentials.json
+        with open(CREDENTIALS_FILE, "w") as token_file:
+            token_file.write(creds.to_json())
+        print("✅ New credentials saved to credentials.json.")
+    except Exception as e:
+        print(f"❌ Error during reauthorization: {e}")
 
-# Attach modified music to video
-final_video = video.set_audio(audio)
-
-# Save final video
-final_video.write_videofile(
-    "video1.mp4",
-    fps=30,
-    codec="libx264",
-    audio_codec="aac",
-    threads=multiprocessing.cpu_count(),
-    preset="ultrafast",
-    ffmpeg_params=["-crf", "23"]
-)
-
+# Call this function if credentials are invalid or revoked
+with open(CREDENTIALS_FILE, "w") as token_file:
+    print(token_file.readlines)
+reauthorize_app()
