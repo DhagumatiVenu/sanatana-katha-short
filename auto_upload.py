@@ -51,6 +51,7 @@ def refresh_access_token(refresh_token, client_id, client_secret):
     }
     try:
         print("Sending refresh token request...")
+        send_telegram_message("Sending refresh token request...")
         response = requests.post(token_url, data=payload)
         print(f"Response status code: {response.status_code}")
         print(f"Response body: {response.text}")
@@ -58,6 +59,7 @@ def refresh_access_token(refresh_token, client_id, client_secret):
         return response.json().get("access_token")
     except requests.exceptions.RequestException as e:
         print(f"❌ Error refreshing access token: {e}")
+        send_telegram_message(f"❌ Error refreshing access token: {e}")
         return None
 
 def load_or_refresh_credentials():
@@ -69,14 +71,17 @@ def load_or_refresh_credentials():
         try:
             creds = Credentials.from_authorized_user_file(CREDENTIALS_FILE, SCOPES)
             print("✅ Credentials loaded successfully.")
+            send_telegram_message("✅ Credentials loaded successfully.")
         except Exception as e:
             print(f"❌ Error loading credentials: {e}")
+            send_telegram_message(f"❌ Error loading credentials: {e}")
             creds = None
 
     # If no valid credentials, refresh or notify about revocation
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             print("Refreshing expired credentials...")
+            send_telegram_message("Refreshing expired credentials...")
             new_access_token = refresh_access_token(
                 creds.refresh_token,
                 creds.client_id,
@@ -86,8 +91,10 @@ def load_or_refresh_credentials():
                 creds.token = new_access_token
                 creds.expiry = None  # Reset expiry to allow the library to calculate it
                 print("✅ Credentials refreshed successfully.")
+                send_telegram_message("✅ Credentials refreshed successfully.")
             else:
                 print("❌ Failed to refresh credentials.")
+                send_telegram_message("❌ Failed to refresh credentials.")
                 creds = None
         else:
             # Notify via Telegram if credentials are revoked or missing
