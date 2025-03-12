@@ -116,7 +116,7 @@ if __name__ == "__main__":
     playlist_id = "PLiE2xlrohs-hGubskhNMU5rDxjLO9Kydk"  # Replace with your actual playlist ID
     description = "✨ Dive into the profound wisdom of Sanatana Krishna & Arjuna! 🔥 Discover timeless teachings to ignite your inner strength. 💪✨"
 
-    for i in range(5):
+    for i in range(1,8):
         video_file = os.path.join(video_folder, video_files[i])
         title_index = int(os.path.splitext(video_files[i])[0])  # Assumes filename is a number matching titles list
         scheduled_time = get_scheduled_time(day_offset=i)  # Schedules for day i (0 = today, 1 = tomorrow, etc.)
